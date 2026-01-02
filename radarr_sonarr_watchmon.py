@@ -40,6 +40,12 @@ class watchedMonitor(object):
         # Bind trakt events
         Trakt.on("oauth.token_refreshed", self.on_token_refreshed)
 
+    def save_authorization(self, authorization):
+        """Persist the latest Trakt auth so refresh token rotation is stored between runs."""
+        path = os.path.join(sys.path[0], ".auth.pkl")
+        with open(path, "wb") as f:
+            pickle.dump(authorization, f, pickle.HIGHEST_PROTOCOL)
+
     def auth_load(self):
         try:
             with open(os.path.join(sys.path[0], ".auth.pkl"), "rb") as f:
@@ -503,8 +509,7 @@ class watchedMonitor(object):
         self.authorization = authorization
 
         # Save authorization to file
-        with open(".auth.pkl", "wb") as f:
-            pickle.dump(authorization, f, pickle.HIGHEST_PROTOCOL)
+        self.save_authorization(authorization)
 
         print("Authentication successful - authorization: %r" % self.authorization)
         print("")
@@ -537,6 +542,7 @@ class watchedMonitor(object):
     def on_token_refreshed(self, authorization):
         # OAuth token refreshed, store authorization for future calls
         self.authorization = authorization
+        self.save_authorization(authorization)
 
         print("Token refreshed - authorization: %r" % self.authorization)
 
